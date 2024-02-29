@@ -28,23 +28,45 @@ const extension: JupyterFrontEndPlugin<void> = {
      * @param setting Extension settings
      */
     function loadSetting(setting: ISettingRegistry.ISettings): void {
-      // Read the settings and convert to the correct type
+      // once everything is loaded, read the settings and convert to the correct type
       limit = setting.get('limit').composite as number;
-      flag = setting.get('flag').composite as boolean;
-
+      flag = setting.get('flag').composite as boolean; // must access composite attribute to get value and specify type explicitly
+ 
       console.log(
         `Settings Example extension: Limit is set to '${limit}' and flag to '${flag}'`
       );
+
+      // console.log(setting.schema.properties);
     }
 
     // Wait for the application to be restored and
     // for the settings for this plugin to be loaded
+    Promise.all([app.restored, settings.load('@jupyterlab/shortcuts-extension:shortcuts')])
+    .then(([, settings]) => {
+      // read the settings
+      let default_shortcuts = settings.schema.properties!.shortcuts.default
+
+      console.log(default_shortcuts)
+
+      // if (default_shortcuts) {
+      //   console.log("default shortcuts", default_shortcuts)
+      // }
+
+    })
+    .catch(reason => {
+      console.error(
+        `Something went wrong when reading the settings.\n${reason}`
+      );
+    });
+
     Promise.all([app.restored, settings.load(PLUGIN_ID)])
       .then(([, setting]) => {
-        // Read the settings
+        // read the settings
         loadSetting(setting);
 
+        // console.log('app commands listcommands', app.commands.listCommands().join('\n'));
         // Listen for your plugin setting changes using Signal
+        // when signal is emitted, the function loadSettings is called with the new settings
         setting.changed.connect(loadSetting);
 
         commands.addCommand(COMMAND_ID, {
@@ -53,11 +75,12 @@ const extension: JupyterFrontEndPlugin<void> = {
           execute: () => {
             // Programmatically change a setting
             Promise.all([
-              setting.set('flag', !flag),
+              setting.set('flag', !flag), // .set method stores the new value
               setting.set('limit', limit + 1)
             ])
               .then(() => {
-                const newLimit = setting.get('limit').composite as number;
+                // setting.remove(PLUGIN_ID, key) // trying to figure out key needed
+                const newLimit = setting.get('limit').composite as number; // to see if the setting was changed
                 const newFlag = setting.get('flag').composite as boolean;
                 window.alert(
                   `Settings Example extension: Limit is set to '${newLimit}' and flag to '${newFlag}'`
