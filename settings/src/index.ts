@@ -36,20 +36,43 @@ const extension: JupyterFrontEndPlugin<void> = {
     //   }
     // }
 
-    async function fetch_and_save(id:string, settings: ISettingRegistry.ISettings, manager: SettingManager) {
+    async function fetch_and_save(id:string, settings: ISettingRegistry.ISettings, manager: SettingManager, shortcut: any) {
       try {
         const fetched_settings = await manager.fetch(id);
         console.log("result of manager.fetch before save", fetched_settings);
-        console.log("result of settings passed in", settings)
+        const raw = fetched_settings.raw
+        // console.log("result of raw before save", raw);
 
-        // const json_setting = JSON.stringify(fetched_settings);
-        // console.log(json_setting)
-        const test_json = `{"theme": "hi"}`
-        // await manager.save(id, test_json);
+        const raw_json = JSON.parse(raw)
+
+        const shift_enter: string[] = ['Shift Enter'];
+
+        for (let i=0; i<raw_json.shortcuts.length; i++) {
+          if (raw_json.shortcuts[i].keys === shift_enter) {
+            console.log('changing shortcut', raw_json.shortcuts[i])
+            raw_json.shortcuts[i].keys = [];
+          }
+        }
+
+        // for (let shortcut in raw_json.shortcuts) {
+        //   console.log(shortcut)
+        // }
+
+        // raw_json.shortcuts[15].keys = [];
+        // raw_json.shortcuts[14].keys = [];
+        // raw_json.shortcuts[84].keys = [];
+
+        //console.log("changed json", raw_json);
+        console.log("changed json stringified", JSON.stringify(raw_json));
+
+        //console.log("result of shortcut passed in", shortcut)
+
+        // console.log("result of jsoned settings", json_setting);
+        // await manager.save(id, json_setting);
 
         // const raw = `{}`;
-        await manager.save(id, test_json);
-        console.log(JSON.parse((await manager.fetch(id)).raw));
+        await manager.save(id, JSON.stringify(raw_json));
+        console.log("result of manager.fetch after change", JSON.parse((await manager.fetch(id)).raw));
       } catch (e) {
         console.log('an error occurred while fetching', e)
       }
@@ -92,7 +115,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       let user_shortcuts = (settings.user.shortcuts!);
 
       // console.log("default shortcuts", default_shortcuts)
-      console.log("settings before changing default shortcuts", settings.user);
+      console.log("settings before changing default shortcuts", settings);
 
       // const shortcut_names = Object.values(default_shortcuts);
       const user_shortcuts_names = structuredClone(Object.values(user_shortcuts));
@@ -113,16 +136,16 @@ const extension: JupyterFrontEndPlugin<void> = {
       // shortcut_names[110].keys = [];
       // console.log("shortcut 100", shortcut_names[110]);
 
-      user_shortcuts_names[101].disabled = true;
-      user_shortcuts_names[101].keys = [];
+      // user_shortcuts_names[15].disabled = true;
+      // user_shortcuts_names[15].keys = [];
 
-      user_shortcuts_names[102].disabled = true;
-      user_shortcuts_names[102].keys = [];
+      // user_shortcuts_names[14].disabled = true;
+      // user_shortcuts_names[14].keys = [];
 
       console.log("user shortcuts after change", user_shortcuts_names)
-      console.log("settings after change", settings)
+      // console.log("settings after change", settings)
 
-      fetch_and_save('@jupyterlab/shortcuts-extension:shortcuts', settings, manager);
+      fetch_and_save('@jupyterlab/shortcuts-extension:shortcuts', settings, manager, user_shortcuts_names);
 
     })
     .catch(reason => {
